@@ -1,0 +1,22 @@
+# This file is mapped into the docker container by the line -v ${CONTAINER_PATH}/../server.env:/server.env \
+# Rename either this file or the left server.env in the dockerfile
+# Propably, the path has also to be changed to match yours
+
+# Database
+DB_USER="fancyDBUser"
+DB_PASSWORD="topsecret"
+DB_HOST="192.168.xxx.xxx"
+DB_PORT=3306
+
+# MQTT
+MQTT_USER="fancyMQTTUser"
+MQTT_PASSWORD="topsecretButBetterDifferentThanDBPW"
+MQTT_HOST="192.168.xxx.xxx"
+MQTT_PORT=1883
+
+# Smartmeter
+SMARTMETER_RAWDATA_MQTT_TOPIC="sensors/smartmeter"
+SMARTMETER_VALUES_MQTT_TOPIC="sensors/smartmeter/values"
+SMARTMETER_DB_SCHEMA="smartmeter"
+SMARTMETER_DB_TABLE="history"
+SMARTMETER_KEY="Get is using this documentation: https://www.netz-noe.at/Download-(1)/Smart-Meter/218_9_SmartMeter_Kundenschnittstelle_lektoriert_14.aspx"

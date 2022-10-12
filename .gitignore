@@ -1,0 +1,3 @@
+*.secret
+server.env
+__pycache__
