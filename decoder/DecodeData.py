@@ -7,8 +7,15 @@
 # # Version 1.0 - 2022-10-12
 # - ) Adapted from Node Red version
 
+# # Version 1.1 - 2023-06-02
+# - ) Logging in DecodeData hinzugefügt, da hier Fehler auftreten wenn der Wert `floatValue` nicht verfügbar ist --> Todo: Checken was hier passiert
+# - ) Timestamp zum Logging der MQTT-Neuverbindungen hinzugefügt
+# - ) Docker-Container auf non-root Modus umgestellt
+# - ) Bei manchen Messungen werden `intValue` ermittelt, die müssen in `floatValue` konvertiert werden
+
 from binascii import unhexlify
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+import logging
 
 security_control_byte = ["30", "10"]
 authentication_key = ""
@@ -144,7 +151,7 @@ def extractValues(pt):
 
             uint32value = int(uint32value, 16)
 
-            dataframe["intvalue"] = uint32value
+            dataframe["intValue"] = uint32value
 
         # UINT16
         elif dataframe is not None and "12" == data_type_slice[:2].lower():
@@ -154,7 +161,7 @@ def extractValues(pt):
 
             uint16value = int(uint16value, 16)
 
-            dataframe["intvalue"] = uint16value
+            dataframe["intValue"] = uint16value
 
         # INT16 ?? - not sure, used at powerfactor
         elif dataframe is not None and "10" == data_type_slice[:2].lower():
@@ -164,7 +171,7 @@ def extractValues(pt):
 
             int16value = twos_complement(int16value, 16)
 
-            dataframe["intvalue"] = int16value
+            dataframe["intValue"] = int16value
 
         # INT8
         elif dataframe is not None and "02020f" == data_type_slice.lower():
@@ -193,9 +200,10 @@ def extractValues(pt):
             dataframe["unit"] = enum
 
             # As the enum is the last element of the dataframe, a value conversion can be done
-            if "intvalue" in dataframe and "scaleExponent" in dataframe:
-                dataframe["floatValue"] = round(float(
-                    dataframe["intvalue"]) * 10**dataframe["scaleExponent"], 3)
+            if "intValue" in dataframe and "scaleExponent" in dataframe:
+                dataframe["floatValue"] = round(
+                    float(dataframe["intValue"]) *
+                    10**dataframe["scaleExponent"], 3)
 
             data['extractedlist'].append(dataframe)
             dataframe = None
@@ -206,11 +214,24 @@ def extractValues(pt):
     # Convert into data dict
     dataDict = {}
 
-    for df in data['extractedlist']:
-        if 'obis' in df:
-            dataDict[df['obis']] = {
-                "value": df['floatValue'],
-                "unit": df['unit'],
+    for df in data["extractedlist"]:
+        if "obis" in df:
+            # It may happen that there is no 'floatValue' in the df
+            # ERROR:root:There is not floatValue in the df for obis PIn: {'obis': 'PIn', 'intValue': 126, 'unit': 'Unknown d7'}
+            # Sometimes it is an integer value, not sure why (maybe just a non-comma value)
+
+            # Cast the int into float
+            if not "floatValue" in df.keys():
+                if "intValue" in df.keys():
+                    df["floatValue"] = df["intValue"] * 1.0
+
+                    logging.info(
+                        f"Cast the intValue into a floatValue in the df for obis {df['obis']}: {str(df)}"
+                    )
+
+            dataDict[df["obis"]] = {
+                "value": df["floatValue"],
+                "unit": df["unit"],
             }
 
     return dataDict
@@ -246,50 +267,50 @@ def rawByteStringToFeatureDict(rawByteString):
     # Extract the mbusstart frame
     breakString = "68"
     dictKey = "mbusstart"
-    featureDict[dictKey], i = ExtractRawValueSlice(
-        rawUTFString, i, breakString)
+    featureDict[dictKey], i = ExtractRawValueSlice(rawUTFString, i,
+                                                   breakString)
 
     # Extract the myst1 frame
     breakLen = 14
     dictKey = "myst1"
-    featureDict[dictKey], i = ExtractRawValueSlice(
-        rawUTFString, i, "", breakLen)
+    featureDict[dictKey], i = ExtractRawValueSlice(rawUTFString, i, "",
+                                                   breakLen)
 
     # Extract the systemTitle frame
     breakLen = 16
     dictKey = "systemTitle"
-    featureDict[dictKey], i = ExtractRawValueSlice(
-        rawUTFString, i, "", breakLen)
+    featureDict[dictKey], i = ExtractRawValueSlice(rawUTFString, i, "",
+                                                   breakLen)
 
     # Extract the myst2 frame
     breakLen = 6
     dictKey = "myst2"
-    featureDict[dictKey], i = ExtractRawValueSlice(
-        rawUTFString, i, "", breakLen)
+    featureDict[dictKey], i = ExtractRawValueSlice(rawUTFString, i, "",
+                                                   breakLen)
 
     # Extract the framecount frame
     breakLen = 8
     dictKey = "frameCount"
-    featureDict[dictKey], i = ExtractRawValueSlice(
-        rawUTFString, i, "", breakLen)
+    featureDict[dictKey], i = ExtractRawValueSlice(rawUTFString, i, "",
+                                                   breakLen)
 
     # Extract the adpu frame
     # Four digits have to remain at the end for checksum and mbus stop
     breakLen = len(rawUTFString) - i - 4
     dictKey = "adpu"
-    featureDict[dictKey], i = ExtractRawValueSlice(
-        rawUTFString, i, "", breakLen)
+    featureDict[dictKey], i = ExtractRawValueSlice(rawUTFString, i, "",
+                                                   breakLen)
 
     # Extract the checksum frame
     breakLen = 2
     dictKey = "checksum"
-    featureDict[dictKey], i = ExtractRawValueSlice(
-        rawUTFString, i, "", breakLen)
+    featureDict[dictKey], i = ExtractRawValueSlice(rawUTFString, i, "",
+                                                   breakLen)
 
     # Extract the mbusstop frame
     breakLen = 2
     dictKey = "mbusstop"
-    featureDict[dictKey], i = ExtractRawValueSlice(
-        rawUTFString, i, "", breakLen)
+    featureDict[dictKey], i = ExtractRawValueSlice(rawUTFString, i, "",
+                                                   breakLen)
 
     return featureDict

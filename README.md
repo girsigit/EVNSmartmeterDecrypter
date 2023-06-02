@@ -112,3 +112,12 @@ Die entschlüsselten Daten werden im MQTT-Topic *SMARTMETER_VALUES_MQTT_TOPIC*, 
    }
 }
 ```
+
+## Change-Log
+
+### 02.06.2023
+
+- Logging in DecodeData hinzugefügt, da hier Fehler auftreten wenn der Wert `floatValue` nicht verfügbar ist --> Todo: Checken was hier passiert
+- Timestamp zum Logging der MQTT-Neuverbindungen hinzugefügt
+- Docker-Container auf non-root Modus umgestellt
+- Bei manchen Messungen werden `intValue` ermittelt, die müssen in `floatValue` konvertiert werden

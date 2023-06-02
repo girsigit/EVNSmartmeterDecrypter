@@ -33,7 +33,8 @@ previousData = None
 
 # The callback for when the client connects to the broker
 def on_connect(client, userdata, flags, rc):
-    logging.info("MQTT connected with result code {0}".format(str(rc)))
+    logging.info(
+        f"At {datetime.now()}, MQTT connected with result code {0}".format(str(rc)))
 
     client.subscribe(os.getenv('SMARTMETER_RAWDATA_MQTT_TOPIC'))
 
@@ -74,7 +75,7 @@ def on_message(client, userdata, msg):
         debouncedTimestamp = math.floor(
             data['timestamp']['value'] / (DEBOUNCED_STORAGE_INTERVAL_MINUTES * 60.0))
 
-        if(prevDebouncedTimestamp != debouncedTimestamp):
+        if (prevDebouncedTimestamp != debouncedTimestamp):
             SaveToDB(data, os.getenv('SMARTMETER_DB_SCHEMA'),
                      os.getenv('SMARTMETER_DB_TABLE')+"Debounced")
 
